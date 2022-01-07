@@ -90,7 +90,9 @@ class User extends Api
 				//如果已经有账号则直接登录
 				$ret = $this->auth->direct($user->id);
 			} else {
-				$ret = $this->auth->register($mobile, Random::alnum(), '', $mobile, []);
+
+
+				$ret = $this->auth->register($mobile);
 			}
 			if ($ret) {
 				Sms::flush($mobile, 'mobilelogin');
@@ -156,7 +158,7 @@ class User extends Api
     				//如果已经有账号则直接登录
     				$ret = $this->auth->direct($user->id);
     			} else {
-    				$ret = $this->auth->register($mobile, Random::alnum(), '', $mobile, []);
+    				$ret = $this->auth->register($mobile);
     			}
 		    }
 			
@@ -171,8 +173,8 @@ class User extends Api
 		}
 		$this->error(__('非法请求'));
     }
-    
-    
+
+
     /**
      * 注册会员
      * @ApiMethod   (POST)
@@ -181,30 +183,60 @@ class User extends Api
      */
     public function register()
     {
-		//设置过滤方法
-		$this->request->filter(['strip_tags']);
-		if ($this->request->isPost()) {
-			$mobile = $this->request->post('mobile');
-			$code = $this->request->post('captcha');
-			$client_id = $this->request->post('client_id');
-			if ($mobile && !Validate::regex($mobile, "^1\d{10}$")) {
-				$this->error(__('Mobile is incorrect'));
-			}
-			$ret = Sms::check($mobile, $code, 'register');
-			if (!$ret) {
-				$this->error(__('Captcha is incorrect'));
-			}
-			$ret = $this->auth->register($mobile, Random::alnum(), '', $mobile, []);
-			if ($ret) {
-			    if($client_id){
-			        $this->wanlchat->bind($client_id, $this->auth->id);
-			    }
-				$this->success(__('Sign up successful'), self::userInfo());
-			} else {
-				$this->error($this->auth->getError());
-			}
-		}
-		$this->error(__('非法请求'));
+        //设置过滤方法
+        $this->request->filter(['strip_tags']);
+        if ($this->request->isPost()) {
+            $invite_code = $this->request->post('invite_code');
+            $password = $this->request->post('password');
+            $mobile = $this->request->post('mobile', '');
+            $captcha = $this->request->post('captcha');
+            $client_id = $this->request->post('client_id');
+            $rule = [
+                'password'  => 'require|length:6,30',
+                'mobile'    => 'regex:/^1\d{10}$/',
+            ];
+
+            $msg = [
+                'password.require' => 'Password can not be empty',
+                'password.length'  => 'Password must be 6 to 30 characters',
+                'mobile'           => 'Mobile is incorrect',
+            ];
+            $data = [
+                'password'  => $password,
+                'mobile'    => $mobile,
+            ];
+            //验证码
+            $captchaResult = true;
+            $captchaType = config("fastadmin.user_register_captcha");
+            if ($captchaType) {
+
+                $captchaResult = Sms::check($mobile, $captcha, 'register');
+
+            }
+            if (!$captchaResult) {
+                $this->error(__('Captcha is incorrect'));
+            }
+            $validate = new Validate($rule, $msg);
+            $result = $validate->check($data);
+            if (!$result) {
+                $this->error(__($validate->getError()), null, ['token' => $this->request->token()]);
+            }
+
+            $extend = [
+                'password'    => $password,
+                'invite_code' => $invite_code,
+            ];
+
+            if ($this->auth->register($mobile,$extend)) {
+                if($client_id){
+                    $this->wanlchat->bind($client_id, $this->auth->id);
+                }
+                $this->success(__('Sign up successful'), self::userInfo());
+            } else {
+                $this->error($this->auth->getError());
+            }
+        }
+        $this->error(__('非法请求'));
     }
 
     /**
@@ -537,12 +569,13 @@ class User extends Api
                                 $mobile = '';
                                 $gender = $json['sex']==1 ? 1 : 0;
                                 $avatar = $json['headimgurl'];
+                                $extend =  [
+                                    'gender' => $gender,
+                                    'nickname' => $username,
+                                    'avatar' => $avatar
+                                ];
                                 // 注册账户        
-                                $result = $this->auth->register('u_'.Random::alnum(6), Random::alnum(), '', $mobile, [
-                    		        'gender' => $gender, 
-                    		        'nickname' => $username, 
-                    		        'avatar' => $avatar
-                    		    ]);
+                                $result = $this->auth->register('u_'.Random::alnum(6), $extend);
                     			if ($result) {
                     			    if (isset($post['client_id']) && $post['client_id'] != null) {
                         		        $this->wanlchat->bind($post['client_id'], $this->auth->id);
@@ -627,7 +660,7 @@ class User extends Api
 							    $gender = $json['sex'] == 1 ? 1 : 0;
 							    $avatar = $json['headimgurl'];
 							    // 注册账户        
-							    $result = $this->auth->register('u_'.Random::alnum(6), Random::alnum(), '', $mobile, [
+							    $result = $this->auth->register('u_'.Random::alnum(6),[
 							        'gender' => $gender, 
 							        'nickname' => $username, 
 							        'avatar' => $avatar
@@ -906,7 +939,7 @@ class User extends Api
     		        $mobile = '';
     		        $gender = $post['gender'];
         		    $avatar = $post['avatarUrl'];
-        		    $result = $this->auth->register('u_'.Random::alnum(6), Random::alnum(), '', $mobile, [
+        		    $result = $this->auth->register('u_'.Random::alnum(6),[
         		        'gender' => $gender, 
         		        'nickname' => $username, 
         		        'avatar' => $avatar

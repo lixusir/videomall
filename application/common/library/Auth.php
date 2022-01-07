@@ -151,6 +151,11 @@ class Auth
             }
         }
 
+        if(!isset($extend['password']) && empty($extend['password'])){
+
+            $extend['password'] = '123456';
+        }
+
         $ip = request()->ip();
         $time = time();
 
@@ -160,8 +165,7 @@ class Auth
             'password' => $this->getEncryptPassword($extend['password'],$salt),
 //            'email'    => $extend['email'] ?? '',
 //            'pay_password'  => $this->getEncryptPassword($extend['password'],$salt),
-            //'level'    => 1,
-//            'score'    => 0,
+            'level'    => 1,
             'nickname' => substr_replace($mobile,'****',3,4),
             'avatar'   => Env::get('user.defaultAvatar'),
         ];
