@@ -2,8 +2,38 @@
 
 return [
     'autoload' => false,
-    'hooks' => [],
-    'route' => [],
+    'hooks' => [
+        'config_init' => [
+            'aliyunsms',
+        ],
+        'sms_send' => [
+            'aliyunsms',
+        ],
+        'sms_notice' => [
+            'aliyunsms',
+        ],
+        'sms_check' => [
+            'aliyunsms',
+        ],
+        'testhook' => [
+            'aliyunsms',
+        ],
+        'upgrade' => [
+            'wanlshop',
+        ],
+        'app_init' => [
+            'wanlshop',
+        ],
+        'user_sidenav_after' => [
+            'wanlshop',
+        ],
+    ],
+    'route' => [
+        '/example$' => 'example/index/index',
+        '/example/d/[:name]' => 'example/demo/index',
+        '/example/d1/[:name]' => 'example/demo/demo1',
+        '/example/d2/[:name]' => 'example/demo/demo2',
+    ],
     'priority' => [],
     'domain' => '',
 ];

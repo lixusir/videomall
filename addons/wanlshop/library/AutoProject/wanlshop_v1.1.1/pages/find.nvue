@@ -1,0 +1,205 @@
+<!-- 
+	版本声明：
+	* 由于 WanlLive、WanlChat、WanlPay 以下代码开发难度较大，已将相关代码独立申请著作权，受法律保护！！！
+	* 无论你购买任何版本，均不允许复制到第三方直接、间接使用，且也不能以学习为目的参考和借鉴！！
+	* 你仅有在 WanlShop 中使用、二次开发权利，否则我们会追究法律责任 
+	* 深圳前海万联科技有限公司 @www.i36k.com
+	* 法律顾问：易法通 @http://www.yifatong.com/
+-->
+<template>
+	<view class="find-container">
+		<view v-if="currentList.length > 0" class="main">
+			<swiper 
+			:current-item-id="currentId"
+			:style="{height: wanlsys.windowHeight + 'px'}" 
+			circular 
+			acceleration
+			@change="changeCurrent"
+			@animationfinish="animationFinish">
+				<!-- 滑动视频页 -->
+				<swiper-item item-id="video" v-if="isVideo">
+					<wanl-find-play
+						ref="findPlay"
+						:isComment="common.appConfig.comment_switch"
+						:width="wanlsys.windowWidth" 
+						:height="wanlsys.windowHeight"
+						:bottom="wanlsys.windowBottom"
+					/>
+				</swiper-item>
+				<!-- 发现页 -->
+				<swiper-item item-id="find">
+					<wanl-find-lists
+						:isComment="common.appConfig.comment_switch"
+						:currentItemId="currentId" 
+						:top="wanlsys.headHeight"
+						:height="wanlsys.windowHeight" 
+						:width="wanlsys.windowWidth - 48" 
+					/>
+				</swiper-item>
+			</swiper>
+		</view>
+		<wanl-find-header 
+			:navColor="common.appStyle.find_nav_color"
+			:currentItemId="currentId" 
+			:currentList="currentList"
+			:isShop="isShop"
+			:isLive="isLive"
+			:isVideo="isVideo"
+			:height="wanlsys.headHeight" 
+			:top="wanlsys.headTop"
+			@onChange="onChangeTab"
+		/>
+	</view>
+</template>
+
+<script>
+	import { mapState } from 'vuex';
+	import wanlFindHeader from '@/components/wanl-find/header';
+	import wanlFindPlay from '@/components/wanl-find/play';
+	import wanlFindLists from '@/components/wanl-find/lists';
+	// #ifdef H5
+	import jssdk from '@/common/libs/jssdk';
+	// #endif
+	export default {
+		computed: {
+			...mapState(['common'])
+		},
+		components: {
+			wanlFindHeader,
+			wanlFindPlay,
+			wanlFindLists
+		},
+		beforeCreate() {
+			// #ifdef APP-NVUE
+			var domModule = weex.requireModule('dom');
+			domModule.addRule('fontFace', {
+				'fontFamily': "iconfont",
+				'src': "url('/static/style/iconfont.ttf')"
+			});
+			// #endif
+		},
+		data() {
+			return {
+				wanlsys: {},
+				currentId: '',
+				currentList: [],
+				isVideo: false,
+				isLive: false,
+				isShop: false
+			};
+		},
+		watch: {
+			currentId(newVal, oldVal) {
+				uni.setTabBarStyle({
+					backgroundColor: newVal === 'find' ? '#ffffff' : '#161616',
+					borderStyle: newVal === 'find' ? 'white' : 'black'
+				})
+				if(newVal === 'find'){
+					if(this.isVideo){
+						this.$refs.findPlay.handleVideoPause();
+					}
+				}
+				if(newVal === 'video'){
+					this.$nextTick(() => {
+						if(this.isVideo){
+							this.$refs.findPlay.handleVideoPlay();
+						}
+					})
+				}
+			}
+		},
+		onShow() {
+			if(this.currentId === 'video'){
+				uni.setTabBarStyle({
+					backgroundColor: '#161616',
+					borderStyle: 'black'
+				})
+			}
+			setTimeout(()=> {
+				uni.setNavigationBarColor({  
+					frontColor: this.$store.state.common.appStyle.find_font_color == 'light' ? '#ffffff' : '#000000'
+			    })  
+			}, 200);
+		},
+		onHide() {
+			setTimeout(() => {
+				uni.setTabBarStyle({
+					backgroundColor: '#ffffff',
+					borderStyle: 'white'
+				})
+				if(this.isVideo){
+					this.$refs.findPlay.handleVideoPause();
+				}
+			}, 50);
+		},
+		mounted() {
+			const sys = uni.getSystemInfoSync();
+			this.wanlsys = {
+				headTop: sys.statusBarHeight,
+				headHeight: sys.statusBarHeight + uni.upx2px(90),
+				windowWidth: sys.windowWidth,
+				windowHeight: sys.windowHeight,
+				windowBottom: 0
+			};
+			// #ifdef APP-NVUE
+			this.wanlsys.windowBottom = sys.windowBottom;
+			// #endif
+			this.loadData();
+		},
+		methods: {
+			async loadData(){
+				let client = '';
+				// #ifdef APP-PLUS
+				client = 'app-wanlshop';
+				// #endif
+				// #ifdef H5
+				if(jssdk.isWechat()){
+					client = 'wechat-wanlshop';
+				}else{
+					client = 'h5-wanlshop';
+				}
+				// #endif
+				// #ifdef MP
+				client = 'mp-wanlshop';
+				// #endif
+				uni.request({
+					url: `${this.$store.state.common.appUrl.api}/wanlshop/find/find/getInit`,
+					header: {
+						'App-Client': client,
+						'Accept-Language':'zh-CN,zh;q=0.9',
+						token: this.$store.state.user.token
+					},
+					success: res => {
+						if(res.data.code === 1){
+							this.isVideo = res.data.data.video;
+							this.isLive = res.data.data.live;
+							this.isShop = res.data.data.shop;
+							this.currentId = res.data.data.id;
+							this.currentList = res.data.data.list;
+						}else{
+							uni.showToast({
+							    title: '服务器繁忙',
+							    icon: 'none'
+							});
+						}
+					}
+				});
+			},
+			animationFinish(e) {
+				//#ifdef APP-PLUS
+				this.changeCurrent(e)
+				//#endif
+			},
+			changeCurrent(e) {
+				this.currentId = e.detail.currentItemId;
+			},
+			onChangeTab(e) {
+				this.currentId = e;
+			}
+		}
+	}
+</script>
+
+<style>
+	@import '@/static/style/wanlnvue.css';
+</style>

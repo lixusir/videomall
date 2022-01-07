@@ -1,0 +1,80 @@
+<template>
+	<view>
+		<wanl-find-play
+			ref="findPlay"
+			:isComment="common.appConfig.comment_switch"
+			:find_id="find_id"
+			:width="windowWidth"
+			:height="windowHeight"
+			:bottom="windowBottom"
+			:safeBottom="safeBottom"
+		/>
+		<view
+			class="position-top-center padding-lr-bj flex-direction justify-between align-center"
+			:style="{ height: `${headHeight}px`, paddingTop: `${headTop}px` }"
+			@tap="handleBack"
+		>
+			<text class="icon text-white text-xl">&#xe645;</text>
+		</view>
+	</view>
+</template>
+
+<script>
+import { mapState } from 'vuex';
+import wanlFindPlay from '@/components/wanl-find/play';
+export default {
+	computed: {
+		...mapState(['common'])
+	},
+	components: {
+		wanlFindPlay
+	},
+	beforeCreate() {
+		// #ifdef APP-NVUE
+		var domModule = weex.requireModule('dom');
+		domModule.addRule('fontFace', {
+			fontFamily: 'iconfont',
+			src: "url('/static/style/iconfont.ttf')"
+		});
+		// #endif
+	},
+	data() {
+		return {
+			find_id: 0,
+			headTop: 0,
+			headHeight: 0,
+			windowWidth: 0,
+			windowHeight: 0,
+			safeBottom: 0,
+			windowBottom: 0
+		};
+	},
+	onHide() {
+		setTimeout(() => {
+			this.$refs.findPlay.handleVideoPause();
+		}, 50);
+	},
+	onLoad(option) {
+		this.find_id = option.id;
+		const sys = uni.getSystemInfoSync();
+		this.headTop = sys.statusBarHeight;
+		this.headHeight = sys.statusBarHeight + uni.upx2px(90);
+		this.windowWidth = sys.windowWidth;
+		this.windowHeight = sys.windowHeight;
+		this.windowBottom = 0;
+		// #ifdef APP-NVUE
+		this.windowBottom = sys.windowBottom;
+		// #endif
+		this.safeBottom = sys.safeAreaInsets.bottom;
+	},
+	methods: {
+		handleBack() {
+			uni.navigateBack();
+		}
+	}
+};
+</script>
+
+<style>
+@import '@/static/style/wanlnvue.css';
+</style>
