@@ -192,17 +192,17 @@ class User extends Api
             $captcha = $this->request->post('captcha');
             $client_id = $this->request->post('client_id');
             $rule = [
-                'password'  => 'require|length:6,30',
+                //'password'  => 'require|length:6,30',
                 'mobile'    => 'regex:/^1\d{10}$/',
             ];
 
             $msg = [
-                'password.require' => 'Password can not be empty',
-                'password.length'  => 'Password must be 6 to 30 characters',
+                //'password.require' => 'Password can not be empty',
+                //'password.length'  => 'Password must be 6 to 30 characters',
                 'mobile'           => 'Mobile is incorrect',
             ];
             $data = [
-                'password'  => $password,
+                //'password'  => $password,
                 'mobile'    => $mobile,
             ];
             //验证码

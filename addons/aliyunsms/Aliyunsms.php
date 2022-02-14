@@ -27,20 +27,81 @@ class Aliyunsms extends Addons
         $this->signname = $this->config['signname'];
     }
 
-    public function smsSendRet($params){
+    public  function curl_request($url,$postStr = ""){
+
+
+
+        $header = array(
+
+            'Content-Type: application/json',
+
+        );
+
+        $curl = curl_init($url);
+
+
+
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
+
+
+
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
+
+
+
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $postStr);
+
+
+
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+
+
+
+        curl_setopt($curl, CURLOPT_FAILONERROR, false);
+
+
+
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+
+
+
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+
+
+
+        $response = curl_exec($curl) or die("error：".curl_errno($curl));
+
+
+
+        curl_close($curl);
+
+
+
+        $result = (array)json_decode($response);
+
+
+
+        return $result;
+
+    }
+
+    public function smsSend(&$params){
 
         $smsParam= array(
             'account' => 's22050085',
             'password' => md5('B1K7Hn'),
             'mobile' => $params['mobile'],
-            'content' => '【新零售商城】您的验证码为'.$params['code'].',请勿泄露于他人' ,
+            'content' => '【新零售商城】您的验证码是:'.$params['code'].'验证码5分钟后过期，请您及时验证！' ,
             'requestId' => '1111',
             'extno' => ''
         );
 
-        $request = Http::post('http://www.17int.cn/xxsmsweb/smsapi/send.json', json_encode($smsParam), array(
-            'Content-Type' => 'application/json'
-        ));
+        $url = 'http://www.17int.cn/xxsmsweb/smsapi/send.json';
+
+        $post_data = json_encode($smsParam,true);
+
+        $list = $this->curl_request($url,$post_data);
+
 
         return true;
     }
@@ -50,8 +111,9 @@ class Aliyunsms extends Addons
      * @param array $params
      * @return  boolean
      */
-    public function smsSend(&$params)
+    public function smsSend_1(&$params)
     {
+        dump($params);die;
         $this->ConfigInit();
         AlibabaCloud::accessKeyClient($this->appkey,$this->appsecret)
             ->regionId($this->regionid)
