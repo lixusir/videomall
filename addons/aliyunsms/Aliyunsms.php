@@ -3,6 +3,7 @@
 namespace addons\aliyunsms;
 
 use AlibabaCloud\Client\AlibabaCloud;
+use fast\Http;
 use think\Addons;
 use think\Exception;
 
@@ -25,6 +26,25 @@ class Aliyunsms extends Addons
         $this->regionid = $this->config['regionid'];
         $this->signname = $this->config['signname'];
     }
+
+    public function smsSendRet($params){
+
+        $smsParam= array(
+            'account' => 's22050085',
+            'password' => md5('B1K7Hn'),
+            'mobile' => $params['mobile'],
+            'content' => '【新零售商城】您的验证码为'.$params['code'].',请勿泄露于他人' ,
+            'requestId' => '1111',
+            'extno' => ''
+        );
+
+        $request = Http::post('http://www.17int.cn/xxsmsweb/smsapi/send.json', json_encode($smsParam), array(
+            'Content-Type' => 'application/json'
+        ));
+
+        return true;
+    }
+
     /**
      * 短信发送通知
      * @param array $params
